@@ -1,8 +1,29 @@
 #include "../../headers/core/string.hpp"
 
-const u32 TRIM_SYMBOLS_LEN = 4;
-const i8 *TRIM_SYMBOLS = "\r\n\t\b";
+const u32 TRIM_SYMBOLS_LEN = 6;
+const i8 *TRIM_SYMBOLS = "\a\r\n\t\b ";
 
+static bool __streql(i8 *s, i8 *other, u32 len) {
+  u32 big_cycles = len / 8;
+  if (big_cycles < 1) {
+    for(i32 i = 0; i < len; i++) {
+      if (s[i] != other[i]) return false;
+    }
+  }
+  u64 *tmp_s = cast(u64 *, s);
+  u64 *tmp_other = cast(u64 *, other);
+  while((big_cycles--) > 0) {
+    if (*(tmp_s++) != *(tmp_other)) return false;
+  }
+  u32 small_cycles = len % 8;
+  if (small_cycles < 1) {
+    return true;
+  }
+  for(i32 i = (len / 8) * 8; i < len; i++) {
+    if (s[i] != other[i]) return false;
+  }
+  return true;
+}
 
 static u32 __strlen(i8 *str) {
   i8 *tmp = str;
@@ -27,7 +48,7 @@ static void __strcpy(i8 *dest, i8 *src, u32 len) {
     dest[len] = '\0';
     return;
   } else {
-    for (i32 i = (len % 8) * 8; i < len; i++) {
+    for (i32 i = (len / 8) * 8; i < len; i++) {
       dest[i] = src[i];
     }
     dest[len] = '\0';
@@ -135,19 +156,69 @@ void String::trim() {
 }
 
 bool String::startsWith(const i8 *pattern) {
-  return false;
+  u32 pattern_len = __strlen((i8 *)pattern);
+  if (pattern_len > this->len) {
+    return false;
+  }
+  for(i32 i = 0; i < pattern_len; i++) {
+    if (pattern[i] != this->data[i]) {
+      return false;
+    }
+  }
+  return true;
 }
+
 bool String::endsWith(const i8 *pattern) {
-  return false;
+  u32 pattern_len = __strlen((i8 *)pattern);
+  if (pattern_len >= this->len) return false;
+
+  u32 p_i = 0;
+  for(i32 i = this->len - pattern_len; i < this->len; i++) {
+    if (this->data[i] != pattern[p_i]) return false;
+    p_i++;
+  }
+  return true;
 }
+
 i32 String::indexOf(const i8 *pattern) {
-  return false;
-}
-i32 String::indexOf(i8 c) {
-  return false;
-}
-i32 String::indexOf(String& s) {
+  u32 p_len = __strlen((i8 *)pattern);
+  if (p_len > this->len) return -1;
+  for(i32 i = 0; i < this->len; i++) {
+    if (pattern[0] == this->data[i]) {
+      if (this->len - i < p_len) return -1;
+      if (__streql(this->data, (i8 *)pattern, p_len)) {
+        return i;
+      }
+    }
+  }
   return -1;
+}
+
+i32 String::indexOf(i8 c) {
+  for(i32 i = 0; i < this->len; i++) {
+    if (this->data[i] == c) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+i32 String::indexOf(String& s) {
+  if (s.len > this->len) return -1;
+  for(i32 i = 0; i < this->len; i++) {
+    if (s.data[0] == this->data[i]) {
+      if (this->len - i < s.len) return -1;
+      if (__streql(this->data, (i8 *)s.data, s.len)) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+bool String::eql(String &other) {
+  __streql(this->data, other.data, this->len);
+  return false;
 }
 DArr<String> String::split(const i8 *pattern) {
   return DArr<String>{};
@@ -155,4 +226,22 @@ DArr<String> String::split(const i8 *pattern) {
   
 String::~String() {
   delete [] this->data; 
+}
+
+bool String::operator==(String& b) {
+  return eql(b);
+}
+
+i8 String::operator[](i32 index) {
+  if ((index < 0) || (index >= this->len)) return 0;
+  return this->data[index];
+}
+
+void String::operator+(String& b) {
+  concat(b);
+}
+
+void String::operator+(i8 c) {
+  i8 buf[2] = {c, '\0'};
+  concat(buf);
 }
