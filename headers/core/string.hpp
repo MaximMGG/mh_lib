@@ -25,6 +25,7 @@ struct String {
   i32 indexOf(i8 c);
   i32 indexOf(String& s);
   bool eql(String &other);
+
   DArr<String> split(const i8 *pattern);
 
   bool operator==(String& b);
