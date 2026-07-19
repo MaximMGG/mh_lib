@@ -1,5 +1,6 @@
 #ifndef MH_TYPES_HPP
 #define MH_TYPES_HPP
+#include <string.h>
 
 typedef char           byte;
 typedef char           i8;
@@ -29,7 +30,11 @@ typedef void *         ptr;
 
 #define cast(type, val) ((type)val)
 
+
 template <typename T>
-void ZERO(T *t, u32 size);
+void ZERO(T *t, u32 size) {
+  memset(t, 0, sizeof(T) * size);
+}
+
 
 #endif //MH_TYPES_HPP
