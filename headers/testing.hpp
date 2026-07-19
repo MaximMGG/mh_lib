@@ -11,26 +11,63 @@ struct TestCase {
   bool success;
 };
 
-TestCase *prepareTestCases(const i8 *tests, i32 *test_list_len, ...);
-void runTest(TestCase *test_list, i32 test_list_len, const i8 *test_file_name);
+class TestList {
+public:
+  TestCase *cases;
+  u32 len = 0;
+  u32 cap;
+
+  TestList();
+  ~TestList();
+  void add(const char *func_name, u32 name_len);
+};
+  
+TestList *prepareTestCases(const i8 *tests, ...);
+void runTest(TestList *list, const i8 *test_file_name);
 void cleanup(TestCase *test_list, i32 test_list_len);
+//void registerTestCase(const i8 *test_name, void (*test_func)());
 
 
 #define TEST(test_name) void test_name()
-#define TEST_LIST(tests)                                                       \
+#define TEST_LIST(...)                                                \
   int main() {                                                                 \
-    int test_list_len = 0;                                                     \
-    TestCase *list = prepareTestCases(#tests, &test_list_len, tests, nullptr);	\
-    runTest(list, test_list_len, __FILE__);					\
-    cleanup(list, test_list_len);                                              \
-}
+    TestList *list = prepareTestCases(#__VA_ARGS__,  __VA_ARGS__, nullptr);          \
+    runTest(list, __FILE__);                                    \
+    return 0;\
+  }
 
 void __assertNotNull(ptr p, u32 line);
 void __assertNull(ptr p, u32 line);
 void __assertTrue(bool expression, u32 line);
 
-template <typename T, typename D>
-void __assertEql(T a, D d, u32 line);
+// template <typename T, typename D>
+// void __assertEql(T a, D d, u32 line);
+
+
+void setFailureMsg(const i8 *msg, u32 line);
+void setCurTestCaseStatus(bool stat);
+bool getCurTestCaseStatus();
+
+template <typename T, typename B>
+void __assertEql(T a, B b, u32 line) {
+  if (a != b) {
+    if (getCurTestCaseStatus()) {
+      setFailureMsg("Not eql, line %d", line);
+      setCurTestCaseStatus(false);
+    }
+  }
+}
+
+template <typename T>
+void __assertEql(T a, T b, u32 line) {
+  if (a != b) {
+    if (getCurTestCaseStatus()) {
+      setFailureMsg("Not eql, line %d", line);
+      setCurTestCaseStatus(false);
+    }
+  }
+}
+
 
 #define assertNotNull(p) __assertNotNull(p, __LINE__)
 #define assertNull(p) __assertNull(p, __LINE__)

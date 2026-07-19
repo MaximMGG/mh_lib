@@ -13,11 +13,11 @@
 
 #define TEST_TOTAL_PASSED_FMT "TOTAL " COLOR_BLUE "PASSED" COLOR_RESET " TESTS: %d\n"
 #define TEST_TOTAL_SUCCESS_FMT "TOTAL " COLOR_GREEN "SUCCESS" COLOR_RESET " TESTS: %d\n"
-#define TEST_TOTAL_FAILED_FMT "TOTAL " COLOR_BLUE "FAILED" COLOR_RESET " TESTS: %d\n"
-#define TEST_TOTAL_TIME_FMT   "TOTAL TIME : %ds %dms\n"
+#define TEST_TOTAL_FAILED_FMT "TOTAL " COLOR_RED "FAILED" COLOR_RESET " TESTS: %d\n"
+#define TEST_TOTAL_TIME_FMT   "TOTAL TIME : %.3lfs\n"
 
-#define TEST_SUCCES_FMT     "Test Case %s " COLOR_GREEN "SUCCESS" COLOR_RESET " : %ds %dms\n"
-#define TEST_FAILED_FMT     "Test Case %s " COLOR_RED "FAILED" COLOR_RESET " %s : %ds %dms\n"
+#define TEST_SUCCES_FMT     " ==> Test Case '%s' " COLOR_GREEN "SUCCESS" COLOR_RESET " : %.3lfs\n"
+#define TEST_FAILED_FMT     " ==> Test Case '%s' " COLOR_RED "FAILED" COLOR_RESET " %s : %.3lfs\n"
 
 
 i8 failure_msg[256]{0};
@@ -27,9 +27,9 @@ u32 succesed_test = 0;
 u32 failed_test = 0;
 TestCase *cur_test_case;
 
-u32 testsLen(i8 *tests) {
-  i8 *tmp = tests;
-  while(*(tmp++) != '0' || (*tmp) != '\n');
+u32 testsLen(const i8 *tests) {
+  i8 *tmp = cast(i8 *, tests);
+  while(*(tmp++) != '\0' && (*tmp) != '\n');
 
   return tmp - tests - 1;
 }
@@ -48,38 +48,40 @@ void setFailureMsg(const i8 *msg, u32 line) {
 
 void printTestCaseSuccessMsg() {
   i8 buf[512]{0};
-  u32 seconds = (cur_test_case->end_time - cur_test_case->start_time) / 1000;
-  u32 ms = (cur_test_case->end_time - cur_test_case->start_time) % 1000;
-  sprintf(buf, TEST_SUCCES_FMT, cur_test_case->test_name, seconds, ms);
+  f64 sec = (f64(cur_test_case->end_time) - f64(cur_test_case->start_time)) / 1000000.0;
+
+  sprintf(buf, TEST_SUCCES_FMT, cur_test_case->test_name, sec);
   printf("%s", buf);
 }
 
 void printTestCaseFailMsg() {
   i8 buf[512]{0};
-  u32 seconds = (cur_test_case->end_time - cur_test_case->start_time) / 1000;
-  u32 ms = (cur_test_case->end_time - cur_test_case->start_time) % 1000;
-  sprintf(buf, TEST_FAILED_FMT, cur_test_case->test_name, failure_msg, seconds, ms);
+  f64 sec = (f64(cur_test_case->end_time) - f64(cur_test_case->start_time)) / 1000000.0;
+  sprintf(buf, TEST_FAILED_FMT, cur_test_case->test_name, failure_msg, sec);
   printf("%s", buf);
 }
 
-void printFinalmsg(u64 start_time, u64 end_time) {
-  u32 seconds = (end_time - start_time) / 1000;
-  u32 ms = (end_time - start_time) % 1000;
+void printFinalMsg(u64 start_time, u64 end_time) {
   i8 buf[512]{0};
   sprintf(buf, TEST_TOTAL_PASSED_FMT, passed_test);
+  printf("%s", buf);
   memset(buf, 0, 512);
   sprintf(buf, TEST_TOTAL_SUCCESS_FMT, succesed_test);
+  printf("%s", buf);
   memset(buf, 0, 512);
   sprintf(buf, TEST_TOTAL_FAILED_FMT, failed_test);
+  printf("%s", buf);
   memset(buf, 0, 512);
-  sprintf(buf, TEST_TOTAL_TIME_FMT, seconds, ms);
+  f64 sec = (f64(end_time) - f64(start_time)) / 1000000.0;
+  sprintf(buf, TEST_TOTAL_TIME_FMT, sec);
+  printf("%s", buf);
 }
 
-void runTest(TestCase *test_cases, i32 test_list_len, i8 *test_file_name) {
-  printf("Run %s tests", test_file_name);
+void runTest(TestList *list, const i8 *test_file_name) {
+  printf("==================RUN \x1b[3;7;32m%s\x1b[0m TEST FILE=================\n", test_file_name);
   u64 start_time = clock();
-  for (i32 i = 0; i < test_list_len; i++) {
-    cur_test_case = &test_cases[i];
+  for (i32 i = 0; i < list->len; i++) {
+    cur_test_case = &list->cases[i];
     cur_test_case->start_time = clock();
     cur_test_case->test_func();
     cur_test_case->end_time = clock();
@@ -93,38 +95,64 @@ void runTest(TestCase *test_cases, i32 test_list_len, i8 *test_file_name) {
     }
   }
   u64 end_time = clock();
+  printFinalMsg(start_time, end_time);
+  delete(list);
 }
 
-TestCase *prepareTestCases(i8 *tests, int *test_list_len, ...) {
-  u32 tests_len = testsLen(tests);
-  for(i32 i = 0; i < tests_len; i++) {
-    if (tests[i] == ',') {
-      *test_list_len += 1;
-    }
+TestList::TestList() {
+  this->len = 0;
+  this->cap = 8;
+  this->cases = new TestCase [this->cap];
+}
+
+TestList::~TestList() {
+  for(i32 i = 0; i < this->len; i++) {
+    delete [] this->cases[i].test_name;
   }
-  TestCase *test_list = new TestCase [*test_list_len];
+  delete [] this->cases;
+}
+
+void TestList::add(const char *func_name, u32 name_len) {
+  if (this->len == this->cap) {
+    this->cap <<= 1;
+    TestCase *new_arr = new TestCase [this->cap];
+    memmove(new_arr, this->cases, sizeof(TestCase) * this->len);
+    delete [] this->cases;
+    this->cases = new_arr;
+  }
+
+  this->cases[this->len].test_name = new i8 [name_len + 1];
+  __strcpy(this->cases[this->len].test_name, (i8 *)func_name, name_len);
+  this->len++;
+}
+
+
+TestList *prepareTestCases(const i8 *tests, ...) {
+  
+  TestList *list = new TestList{};
+
   u32 test_i = 0;
+  u32 tests_len = strlen(tests);
 
   i8 buf[128]{0};
   i32 buf_i = 0;
 
   for(i32 i = 0; i < tests_len; i++) {
     if (tests[i] == ',') {
-      test_list[test_i].test_name = new char [buf_i + 1];
-      __strcpy(test_list[test_i].test_name, buf, buf_i);
-      ZERO(buf, 128);
+      list->add(buf, buf_i);
+      memset(buf, 0, 128);
       buf_i = 0;
       test_i++;
+      i++;
     } else {
       buf[buf_i++] = tests[i];
     }
   }
-  test_list[test_i].test_name = new char[buf_i + 1];
-  __strcpy(test_list[test_i].test_name, buf, buf_i);
+  list->add(buf, buf_i);
 
   test_i = 0;
   va_list li;
-  va_start(li, test_list_len);
+  va_start(li, tests);
 
   ptr p;
 
@@ -133,38 +161,45 @@ TestCase *prepareTestCases(i8 *tests, int *test_list_len, ...) {
     if (p == nullptr) {
       break;
     }
-    test_list[test_i++].test_func = (void (*)())p;
+    list->cases[test_i].success = true;
+    list->cases[test_i++].test_func = (void (*)())p;
   }
-  test_list[0].success = true;
+
   va_end(li);
-  return test_list;
+  return list;
 }
 
 void __assertNotNull(ptr p, u32 line) {
   if (p == nullptr) {
-    setFailureMsg("Pointer is NULL", line);
-    cur_test_case->success = false;
+    if (cur_test_case->success) {
+      setFailureMsg("Pointer is NULL", line);
+      cur_test_case->success = false;
+    }
   }
 }
 
 void __assertNull(ptr p, u32 line) {
   if (p != nullptr) {
-    setFailureMsg("Pointer not NULL", line);
-    cur_test_case->success = false;
+    if (cur_test_case->success) {
+      setFailureMsg("Pointer not NULL", line);
+      cur_test_case->success = false;
+    }
   }
 }
 
 void __assertTrue(bool expression, u32 line) {
   if (!expression) {
-    setFailureMsg("expression should be TRUE", line);
-    cur_test_case->success = false;
+    if (cur_test_case->success) {
+      setFailureMsg("expression should be TRUE", line);
+      cur_test_case->success = false;
+    }
   }
 }
 
-template <typename T, typename D>
-void __assertEql(T a, D d, u32 line) {
-  if (a != d) {
-    setFailureMsg("Not Eql", line);
-    cur_test_case->success = false;
-  }
+void setCurTestCaseStatus(bool stat) {
+  cur_test_case->success = stat;
+}
+
+bool getCurTestCaseStatus() {
+  return cur_test_case->success;
 }

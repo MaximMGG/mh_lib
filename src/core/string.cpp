@@ -27,7 +27,7 @@ static bool __streql(i8 *s, i8 *other, u32 len) {
 
 static u32 __strlen(i8 *str) {
   i8 *tmp = str;
-  while((*(tmp++) != '\0') || (*tmp != '\n'));
+  while((*(tmp++) != '\0') && (*tmp != '\n'));
   return tmp - str - 1;
 }
 
@@ -113,6 +113,17 @@ void String::concat(const i8 *str) {
   this->len = new_len;
 }
 
+void String::concat(const i8 *str, u32 len) {
+  u32 new_len = this->len + len;
+  i8 *new_data = new i8 [new_len + 1];
+  __strcpy(new_data, this->data, this->len);
+  __strcpy(&new_data[this->len], (i8 *)str, len);
+  delete [] this->data;
+  this->data = new_data;
+  this->len = new_len;
+}
+
+
 String String::substring(u32 from, u32 to) {
   if ((from < 0) || (to >= this->len) || (from > to)) {
     return String{};
@@ -186,7 +197,7 @@ i32 String::indexOf(const i8 *pattern) {
   for(i32 i = 0; i < this->len; i++) {
     if (pattern[0] == this->data[i]) {
       if (this->len - i < p_len) return -1;
-      if (__streql(this->data, (i8 *)pattern, p_len)) {
+      if (__streql(&this->data[i], (i8 *)pattern, p_len)) {
         return i;
       }
     }
@@ -208,7 +219,7 @@ i32 String::indexOf(String& s) {
   for(i32 i = 0; i < this->len; i++) {
     if (s.data[0] == this->data[i]) {
       if (this->len - i < s.len) return -1;
-      if (__streql(this->data, (i8 *)s.data, s.len)) {
+      if (__streql(&this->data[i], (i8 *)s.data, s.len)) {
         return i;
       }
     }
@@ -217,9 +228,13 @@ i32 String::indexOf(String& s) {
 }
 
 bool String::eql(String &other) {
-  __streql(this->data, other.data, this->len);
-  return false;
+  return __streql(this->data, other.data, this->len);
 }
+
+bool String::eql(const i8 *s) {
+  return __streql(this->data, (i8 *)s, this->len);
+}
+
 DArr<String> String::split(const i8 *pattern) {
   return DArr<String>{};
 }
@@ -232,16 +247,76 @@ bool String::operator==(String& b) {
   return eql(b);
 }
 
+bool String::operator==(const i8 *s) {
+  return eql(s);
+}
+
 i8 String::operator[](i32 index) {
   if ((index < 0) || (index >= this->len)) return 0;
   return this->data[index];
 }
 
-void String::operator+(String& b) {
+void String::operator+=(String& b) {
   concat(b);
 }
 
-void String::operator+(i8 c) {
+void String::operator+=(i8 c) {
   i8 buf[2] = {c, '\0'};
   concat(buf);
+}
+
+void String::operator+=(const i8 *s) {
+  concat(s);
+}
+
+String String::operator+(String& b) {
+  String n_str{this};
+  n_str += b;
+  return n_str;
+}
+
+String String::operator+(const i8 *s) {
+  String n_str{this};
+  n_str += s;
+  return n_str;
+}
+
+String String::operator+(i8 c) {
+  String n_str{this};
+  i8 buf[2] = {c, '\0'};
+  n_str += buf;
+  return n_str;
+}
+
+void String::replace(const i8 *pattern, const i8 *s) {
+  u32 p_len = __strlen((i8 *)pattern);
+  u32 s_len = __strlen((i8 *)s);
+  i32 index = 0;
+  i32 pr_index = 0;
+  String acum{""};
+  
+  while(index < this->len) {
+    if (pattern[0] == this->data[index]) {
+      if (__streql((i8 *)pattern, &this->data[index], p_len)) {
+        acum.concat(&this->data[pr_index], index - pr_index);
+        acum.concat(s, s_len);
+        pr_index = index + p_len;
+        index += p_len;
+      } else {
+        index++;
+      }
+    } else {
+      index++;
+    }
+  }
+
+  if (pr_index < index) {
+    acum.concat(&this->data[pr_index], index - pr_index);
+  }
+  
+  delete [] this->data;
+  i8 *new_data = new i8 [acum.len + 1];
+  __strcpy(new_data, acum.data, acum.len);
+  this->data = new_data;
+  this->len = acum.len;
 }

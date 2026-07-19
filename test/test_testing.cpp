@@ -3,12 +3,15 @@
 
 TEST(one_test) {
   assertTrue(2 == 2);
-  assertEql(3, 8);
+  //  assertEql(3, 8);
+  __assertEql(3, 3, __LINE__);
+ }
+
+
+TEST(two_test) {
+  i32 a = 3;
+  i32 *b = &a;
+  assertNotNull(b);
 }
 
-int main() {
-  int test_list_len = 0;
-  TestCase *list = prepareTestCases("one_test", &test_list_len, one_test, nullptr);
-  runTest(list, test_list_len, "/home/mhrun/cppprogramming/mh_lib/test/test_testing.cpp");
-  cleanup(list, test_list_len);
-};
+TEST_LIST(one_test, two_test);
