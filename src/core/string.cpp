@@ -13,7 +13,7 @@ static bool __streql(i8 *s, i8 *other, u32 len) {
   u64 *tmp_s = cast(u64 *, s);
   u64 *tmp_other = cast(u64 *, other);
   while((big_cycles--) > 0) {
-    if (*(tmp_s++) != *(tmp_other)) return false;
+    if (*(tmp_s++) != *(tmp_other++)) return false;
   }
   u32 small_cycles = len % 8;
   if (small_cycles < 1) {

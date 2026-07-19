@@ -3,6 +3,14 @@
 #include <string.h>
 #include <stdio.h>
 
+TEST(replace_empty_test) {
+  String a{"Complitly this disaster, becouse this string for this replace test this"};
+  a.replace(" this", "");
+  printf("%s\n", a.data);
+  printf("%d\n", strcmp(a.data, "Complitly disaster, becouse string for replace test"));
+  assertTrue(a == "Complitly disaster, becouse string for replace test");
+}
+
 TEST(replace_test) {
   String a{"Complitly this disaster, becouse this string for this replace test this"};
   a.replace("this", "BUZZUZ");
@@ -83,4 +91,4 @@ TEST(create_string_test) {
 }
 
 
-TEST_LIST(create_string_test, add_string_test, multiple_add_test, new_add_string_test, ends_with_test, start_with_test, substring_test, trim_test, index_of_test, replace_test);
+TEST_LIST(create_string_test, add_string_test, multiple_add_test, new_add_string_test, ends_with_test, start_with_test, substring_test, trim_test, index_of_test, replace_test, replace_empty_test);
