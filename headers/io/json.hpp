@@ -27,6 +27,7 @@ struct Json {
   
   
   JsonType val_type;
+  JsonType arr_type;
 
   u32 obj_len;
   u32 obj_cap;
@@ -38,18 +39,30 @@ struct Json {
   Json(JsonType type, const i8 *key, ...);
   Json(const i8 *file_name);
   Json(const i8 *buf, u32 buf_len);
+  Json();
   ~Json();
 
   void addString(const i8 *key, const i8 *val);
+  void addString(Json *j_string);
   void addNumber(const i8 *key, f64 val);
+  void addNumber(Json *j_number);
   void addBoolean(const i8 *key, bool val);
+  void addBoolean(Json *j_boolean);
   void addArray(const i8 *key, Json *val);
+  void addArray(Json *j_array);
   void addObj(const i8 *key, Json *val);
+  void addObj(Json *j_obj);
   void addNull(const i8 *key);
+  void addNull(Json *j_null);
+  
 
   Json *getObj(const i8 *key);
 
   void writeToFile(const i8* file_name);
   void print();
   void toString();
+
+private:
+  void checkObjValSize();
+  void checkArrValSize();
 };
