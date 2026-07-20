@@ -1,0 +1,9 @@
+TEST:
+[
+  NAME: "MH LIB MODULE TEST"
+  TEST_DIR: "./test"
+  TEST_CASE: [
+    {"mh_string_test.cpp", "-lmh"}
+  ]
+]
+
