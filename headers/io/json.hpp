@@ -24,9 +24,9 @@ struct Json {
     Val();
     ~Val();
   } val;  
+
+  JsonType type;
   
-  
-  JsonType val_type;
   JsonType arr_type;
 
   u32 obj_len;
@@ -48,9 +48,7 @@ struct Json {
   void addNumber(Json *j_number);
   void addBoolean(const i8 *key, bool val);
   void addBoolean(Json *j_boolean);
-  void addArray(const i8 *key, Json *val);
   void addArray(Json *j_array);
-  void addObj(const i8 *key, Json *val);
   void addObj(Json *j_obj);
   void addNull(const i8 *key);
   void addNull(Json *j_null);
