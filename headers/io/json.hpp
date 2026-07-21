@@ -58,7 +58,7 @@ struct Json {
 
   void writeToFile(const i8* file_name);
   void print();
-  void toString();
+  String toString();
 
 private:
   void checkObjValSize();

@@ -1,4 +1,6 @@
 #include "../../headers/core/string.hpp"
+#include <stdio.h>
+#include <stdarg.h>
 
 const u32 TRIM_SYMBOLS_LEN = 6;
 const i8 *TRIM_SYMBOLS = "\a\r\n\t\b ";
@@ -293,7 +295,7 @@ void String::replace(const i8 *pattern, const i8 *s) {
   u32 s_len = __strlen((i8 *)s);
   i32 index = 0;
   i32 pr_index = 0;
-  String acum{""};
+  String acum{};
   
   while(index < this->len) {
     if (pattern[0] == this->data[index]) {
@@ -320,3 +322,98 @@ void String::replace(const i8 *pattern, const i8 *s) {
   this->data = new_data;
   this->len = acum.len;
 }
+
+
+//STRING BUFFER BEGIN
+
+#define DEFAULT_STR_BUF_CAP 4096
+
+StrBuf::StrBuf() {
+  this->len = 0;
+  this->cap = DEFAULT_STR_BUF_CAP;
+  this->data = new i8 [this->cap];
+  ZERO(this->data, this->cap);
+}
+
+StrBuf::StrBuf(u32 cap) {
+  this->len = 0;
+  this->cap = cap;
+  this->data = new i8 [this->cap];
+  ZERO(this->data, this->cap);
+}
+
+StrBuf::~StrBuf() {
+  delete [] this->data;
+}
+
+void checkCap(StrBuf& sb, u32 len) {
+  while((sb.len + len) >= sb.cap) {
+    sb.cap <<= 1;
+    i8 *new_data = new i8 [sb.cap];
+    ZERO(new_data, sb.cap);
+    memcpy(new_data, sb.data, sb.len);
+    delete [] sb.data;
+    sb.data = new_data;
+  }
+}
+
+
+void StrBuf::append(const i8* src) {
+  u32 src_len = strlen(src);
+  checkCap(*this, src_len);
+  memcpy(&this->data[this->len], src, src_len);
+  this->len += src_len;
+}
+
+void StrBuf::append(i8 c) {
+  checkCap(*this, 1);
+  this->data[this->len] = c;
+  this->len++;
+}
+
+void StrBuf::append(String& src) {
+  checkCap(*this, src.len);
+  memcpy(&this->data[this->len], src.data, src.len);
+  this->len += src.len;
+}
+
+void StrBuf::operator<<(const i8* src) {
+  u32 src_len = strlen(src);
+  checkCap(*this, src_len);
+  memcpy(&this->data[this->len], src, src_len);
+  this->len += src_len;
+}
+
+void StrBuf::operator<<(i8 c) {
+  checkCap(*this, 1);
+  this->data[this->len] = c;
+  this->len++;
+}
+
+void StrBuf::appendFmt(const i8 *fmt, ...) {
+  va_list li;
+  va_start(li, fmt);
+  i8 buf[4096]{0};
+  vsnprintf(buf, 4096, fmt, li);
+  va_end(li);
+  append(buf);
+}
+
+void StrBuf::reverse() {
+  i8 *rev = new i8 [this->cap];
+  ZERO(rev, this->cap);
+  u32 revi = 0;
+  for(i32 i = this->len - 1; i > 0; i--) {
+    rev[revi++] = this->data[i];
+  }
+  delete [] this->data;
+  this->data = rev;
+}
+//Allocate new string, return it
+String StrBuf::toString() {
+  String res{this->data, this->len};
+  return res;
+}
+
+
+//STRING BUFFER END

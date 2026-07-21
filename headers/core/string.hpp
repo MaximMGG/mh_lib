@@ -14,6 +14,7 @@ struct String {
   String(String& s);
   String(const String& s);
   String(i8 *str, u32 len);
+  String(const i8 *fmt, ...);
 
   void concat(String &s);
   void concat(const i8 *str);
@@ -49,5 +50,25 @@ struct String {
 
 };
 
+
+struct StrBuf {
+  i8 *data;
+  u32 len;
+  u32 cap;
+
+  StrBuf();
+  StrBuf(u32 cap);
+  ~StrBuf();
+  void append(const i8* src);
+  void append(i8 c);
+  void append(String& src);
+  void operator<<(const i8* src);
+  void operator<<(i8 c);
+  void appendFmt(const i8 *fmt, ...);
+  void reverse();
+  //Allocate new string, return it
+  String toString();
+  
+};
 
 #endif //MH_STRING_HPP

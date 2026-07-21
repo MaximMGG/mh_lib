@@ -653,11 +653,62 @@ void Json::addObj(Json *val) {
 }
 
 void Json::addNull(const i8 *key) {
+  if (this->type == JSON_OBJECT) {
+    this->val.j_obj[this->obj_len++] = new Json(JSON_NULL, key);
+    checkObjValSize();
+  } else {
+    if (this->arr_type != JSON_NULL) {
+      fprintf(stderr, "Try to add String obj to not a string array\n");
+      return;
+    }
+    this->val.j_array[this->arr_len++] = new Json(JSON_NULL, nullptr);
+    checkArrValSize();
+  }
+}
+void Json::addNull(Json *j_null) {
+  if (this->type == JSON_OBJECT) {
+    this->val.j_obj[this->obj_len++] = j_null;
+    checkObjValSize();
+  } else {
+    if (this->arr_type != JSON_NULL) {
+      fprintf(stderr, "Try to add String obj to not a string array\n");
+      return;
+    }
+    this->val.j_array[this->arr_len++] = j_null;
+    checkArrValSize();
+  }
+}
+
+Json *Json::getObj(const i8 *key) {
+  if (this->type != JSON_OBJECT) {
+    fprintf(stderr, "func getObj works only with objects");
+    return nullptr;
+  }
+
+  Json **obj_cont = this->val.j_obj;
+  for(i32 i = 0; i < this->obj_len; i++) {
+    if (obj_cont[i]->key == key) {
+      return obj_cont[i];
+    }
+    if (obj_cont[i]->type == JSON_OBJECT) {
+      Json *res = obj_cont[i]->getObj(key);
+      if (res != nullptr) return res;
+    }
+  }
+  
+  return nullptr;
+}
+
+void Json::writeToFile(const i8 *file_name) {
+  String json_content = this->toString();
+}
+
+void Json::print() {
   
 }
-void Json::addNull(Json *j_null){}
 
-Json *Json::getObj(const i8 *key) { return nullptr; }
-void Json::writeToFile(const i8 *file_name) {}
-void Json::print() {}
-void Json::toString() {}
+String Json::toString() {
+
+
+  return String{};
+}
