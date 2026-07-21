@@ -290,6 +290,36 @@ String String::operator+(i8 c) {
   return n_str;
 }
 
+void String::operator=(const i8 *src) {
+  if (this->len != 0) {
+    delete [] this->data;
+  }
+  u32 src_len = __strlen((i8 *)src);
+  this->data = new i8 [src_len + 1];
+  memcpy(this->data, src, src_len);
+  this->data[src_len] = '\0';
+  this->len = src_len;
+}
+// void String::operator=(String& s) {
+//   if (this->len != 0) {
+//     delete [] this->data;
+//   }
+//   this->data = new i8 [s.len + 1];
+//   memcpy(this->data, s.data, s.len);
+//   this->data[s.len] = '\0';
+//   this->len = s.len;
+//}
+
+void String::operator=(String s) {
+  if (this->len != 0) {
+    delete [] this->data;
+  }
+  this->data = new i8 [s.len + 1];
+  memcpy(this->data, s.data, s.len);
+  this->data[s.len] = '\0';
+  this->len = s.len;
+}
+
 void String::replace(const i8 *pattern, const i8 *s) {
   u32 p_len = __strlen((i8 *)pattern);
   u32 s_len = __strlen((i8 *)s);

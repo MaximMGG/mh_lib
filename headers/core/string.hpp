@@ -4,8 +4,8 @@
 #include "array.hpp"
 
 struct String {
-  i8 *data;
-  u32 len;
+  i8 *data = nullptr;
+  u32 len = 0;
 
   String() = default;
   String(const i8 *str);
@@ -41,6 +41,9 @@ struct String {
   void operator+=(String& b);
   void operator+=(const i8 *s);
   void operator+=(i8 c);
+  void operator=(const i8 *src);
+  //void operator=(String& s);
+  void operator=(String s);
 
   String operator+(String& b);
   String operator+(const i8 *s);

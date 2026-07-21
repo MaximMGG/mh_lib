@@ -8,9 +8,9 @@
 #define DEFAULT_OBJ_CAP 8
 #define DEFAULT_ARR_CAP 8
 
-Json *parseObj(const i8 *key, i8 *json_src, i32 *i);
+Json *parseObj(const i8 *key, i8 *json_src, u64 *i, u64 json_size);
 
-bool parseBoolean(i8 *json_src, i32 *i, u64 json_size) {
+bool parseBoolean(i8 *json_src, u64 *i, u64 json_size) {
   if (*i + 5 == json_size) {
     fprintf(stderr, "Incorrect Json, broken boolean\n");
   }
@@ -30,7 +30,7 @@ bool parseBoolean(i8 *json_src, i32 *i, u64 json_size) {
   return false;
 }
 
-String parseString(i8 *json_src, i32 *i, u64 json_size) {
+String parseString(i8 *json_src, u64 *i, u64 json_size) {
   u32 max_len = 10240;
   i8 *buf = new i8 [max_len];
   ZERO(buf, max_len);
@@ -53,7 +53,7 @@ String parseString(i8 *json_src, i32 *i, u64 json_size) {
   return res;
 }
 
-f64 parseNumber(i8 *json_src, i32 *i, u64 json_size) {
+f64 parseNumber(i8 *json_src, u64 *i, u64 json_size) {
   i8 buf[128]{0};
   i32 buf_i = 0;
 
@@ -97,7 +97,7 @@ f64 parseNumber(i8 *json_src, i32 *i, u64 json_size) {
   return res;
 }
 
-Json *parseArray(const i8 *key, i8 *json_src, i32 *i, u64 json_size) {
+Json *parseArray(const i8 *key, i8 *json_src, u64 *i, u64 json_size) {
   Json *arr = new Json(JSON_ARRAY, key);
   bool type_not_defined = true;
   i32 index;
@@ -233,7 +233,7 @@ Json *parseArray(const i8 *key, i8 *json_src, i32 *i, u64 json_size) {
         }
       }
       *i += 1;
-      Json *tmp_obj = parseObj(nullptr, json_src, i);
+      Json *tmp_obj = parseObj(nullptr, json_src, i, json_size);
       arr->addObj(tmp_obj);
       if (json_src[*i] != ',') {
         break;
@@ -246,7 +246,7 @@ Json *parseArray(const i8 *key, i8 *json_src, i32 *i, u64 json_size) {
   return arr;
 }
 
-Json *parseObj(const i8 *key, i8 *json_src, i32 *i, u64 json_size) {
+Json *parseObj(const i8 *key, i8 *json_src, u64 *i, u64 json_size) {
   Json *obj = new Json(JSON_OBJECT, key);
 
   bool is_key = false;
@@ -359,6 +359,13 @@ Json *parseObj(const i8 *key, i8 *json_src, i32 *i, u64 json_size) {
   return obj;
 }
 
+Json::Val::Val() {
+  
+}
+
+Json::Val::~Val() {
+  
+}
 
 Json::Json(JsonType type, const i8 *key, ...) {
   this->type = type;
@@ -428,7 +435,7 @@ bool spaceSymbol(i8 c) {
 i8 *trimJsonSource(const i8 *json_src, u64 file_size, u64 *new_size) {
   i8 *prep_source = new i8 [file_size];
   u32 i = 0;
-  for(i32 j = 0; j < file_size; j++) {
+  for(u64 j = 0; j < file_size; j++) {
     if (spaceSymbol(json_src[j])) continue;
     else {
       prep_source[i++] = json_src[j];
@@ -436,6 +443,26 @@ i8 *trimJsonSource(const i8 *json_src, u64 file_size, u64 *new_size) {
   }
   *new_size = i;
   return prep_source;
+}
+
+Json::Json() {
+  
+}
+
+Json::~Json() {
+  if (this->type == JSON_OBJECT) {
+    Json **objects = this->val.j_obj;
+    for(i32 i = 0; i < this->obj_len; i++) {
+      delete objects[i];
+    }
+    delete [] objects;
+  } else if (this->type == JSON_ARRAY) {
+    Json **arr = this->val.j_array;
+    for(i32 i = 0; i < this->arr_len; i++) {
+      delete arr[i];
+    }
+    delete [] arr;
+  }
 }
 
 Json::Json(const i8 *file_name) {
@@ -457,7 +484,7 @@ Json::Json(const i8 *file_name) {
 
   close(fd);
 
-  i32 i = 0;
+  u64 i = 0;
   u64 new_size = 0;
 
   i8 *prep_json_src = trimJsonSource(json_src, file_size, &new_size);
@@ -471,11 +498,8 @@ Json::Json(const i8 *file_name) {
   delete obj;
 }
 
-Json::Json() {
-}
-
 Json::Json(const i8 *buf, u32 buf_len) {
-  i32 i = 0;
+  u64 i = 0;
   u64 new_size = 0;
 
   i8 *prep_json_src = trimJsonSource(buf, buf_len, &new_size);
@@ -487,33 +511,6 @@ Json::Json(const i8 *buf, u32 buf_len) {
   this->obj_len = obj->obj_len;
   this->type = obj->type;
   delete obj;
-}
-
-Json::~Json() {
-  switch(this->type) {
-  case JSON_NUMBER: {
-    
-  } break;
-  case JSON_STRING: {
-    
-  } break;
-  case JSON_BOOLEAN: {
-    
-  } break;
-  case JSON_ARRAY: {
-    for(i32 i = 0; i < this->obj_len; i++) {
-      delete this->val.j_obj[i];
-    }
-  } break;
-  case JSON_OBJECT: {
-    for(i32 i = 0; i < this->obj_len; i++) {
-      delete this->val.j_obj[i];
-    }
-  } break;
-  case JSON_NULL: {
-    
-  } break;
-  }
 }
 
 void Json::checkObjValSize() {
