@@ -68,6 +68,11 @@ void __assertEql(T a, T b, u32 line) {
   }
 }
 
+void __assertEql(const i8 *a, const i8 *b, u32 line);
+void __assertEql(i8 *a, const i8 *b, u32 line);
+void __assertEql(i8 *a, i8 *b, u32 line);
+void __assertEql(const i8 *a, i8 *b, u32 line);
+
 
 #define assertNotNull(p) __assertNotNull(p, __LINE__)
 #define assertNull(p) __assertNull(p, __LINE__)

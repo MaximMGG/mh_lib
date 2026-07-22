@@ -43,7 +43,7 @@ struct String {
   void operator+=(i8 c);
   void operator=(const i8 *src);
   //void operator=(String& s);
-  void operator=(String s);
+  //void operator=(String s);
 
   String operator+(String& b);
   String operator+(const i8 *s);

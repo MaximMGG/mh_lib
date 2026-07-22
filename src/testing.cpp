@@ -203,3 +203,41 @@ void setCurTestCaseStatus(bool stat) {
 bool getCurTestCaseStatus() {
   return cur_test_case->success;
 }
+
+void __assertEql(const i8 *a, const i8 *b, u32 line) {
+  if (strcmp(a, b) != 0)  {
+    if (cur_test_case->success) {
+      setFailureMsg("String not equlase,", line);
+      cur_test_case->success = false;
+    }
+  }
+}
+
+void __assertEql(i8 *a, const i8 *b, u32 line) {
+  if (strcmp(a, b) != 0)  {
+    if (cur_test_case->success) {
+      setFailureMsg("String not equlase,", line);
+      cur_test_case->success = false;
+    }
+  }
+}
+
+void __assertEql(i8 *a, i8 *b, u32 line) {
+  if (strcmp(a, b) != 0)  {
+    if (cur_test_case->success) {
+      setFailureMsg("String not equlase,", line);
+      cur_test_case->success = false;
+    }
+  }
+
+}
+
+void __assertEql(const i8 *a, i8 *b, u32 line) {
+  if (strcmp(a, b) != 0)  {
+    if (cur_test_case->success) {
+      setFailureMsg("String not equlase,", line);
+      cur_test_case->success = false;
+    }
+  }
+}
+

@@ -310,15 +310,15 @@ void String::operator=(const i8 *src) {
 //   this->len = s.len;
 //}
 
-void String::operator=(String s) {
-  if (this->len != 0) {
-    delete [] this->data;
-  }
-  this->data = new i8 [s.len + 1];
-  memcpy(this->data, s.data, s.len);
-  this->data[s.len] = '\0';
-  this->len = s.len;
-}
+// void String::operator=(String s) {
+//   if (this->len != 0) {
+//     delete [] this->data;
+//   }
+//   this->data = new i8 [s.len + 1];
+//   memcpy(this->data, s.data, s.len);
+//   this->data[s.len] = '\0';
+//   this->len = s.len;
+// }
 
 void String::replace(const i8 *pattern, const i8 *s) {
   u32 p_len = __strlen((i8 *)pattern);
@@ -433,7 +433,7 @@ void StrBuf::reverse() {
   i8 *rev = new i8 [this->cap];
   ZERO(rev, this->cap);
   u32 revi = 0;
-  for(i32 i = this->len - 1; i > 0; i--) {
+  for(i32 i = this->len - 1; i >= 0; i--) {
     rev[revi++] = this->data[i];
   }
   delete [] this->data;
