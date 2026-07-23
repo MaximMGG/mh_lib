@@ -7,6 +7,91 @@
 
 #define DEFAULT_OBJ_CAP 8
 #define DEFAULT_ARR_CAP 8
+#define MAX_STRING_LENGTH 10240
+
+
+class Parser {
+public:
+  i8 *buf;
+  u32 buf_size;
+  u32 i;
+  bool valid;
+  bool end_of_buf;
+  bool inside_string;
+  
+  Parser(i8 *buf, u32 buf_size) : buf(buf), buf_size(buf_size){
+    i = 0;
+    valid = true;
+    end_of_buf = false;
+    inside_string = false;
+  }
+  ~Parser();
+
+  i8 nextToken() {
+    if (this->i == this->buf_size) {
+      end_of_buf = true;
+      return 0;
+    }
+
+    while(true) {
+      if (this->i == this->buf_size) {
+        end_of_buf = true;
+        return 0;
+      }
+      switch(this->buf[this->i]) {
+      case '\r':
+      case '\t':
+      case '\n':
+      case '\a':
+      case ' ': {
+        if (this->inside_string) {
+          this->i++;
+          return ' ';
+        } else {
+          this->i++;
+          continue;
+        }
+      }
+      default: {
+        this->i++;
+        return this->buf[this->i - 1];
+      }
+      }
+    }
+    return 0;
+  }
+  
+  i8 *parseString() {
+    i8 *str = new i8 [MAX_STRING_LENGTH];
+    u32 j = 0;
+    ZERO(str, MAX_STRING_LENGTH);
+    while(!this->end_of_buf) {
+      if (j == MAX_STRING_LENGTH) {
+        this->valid = false;
+        return nullptr;
+      }
+      i8 t = nextToken();
+      if (t == '\"') {
+        return str;
+      }
+      str[j++] = t;
+    }
+    return nullptr;
+  }
+  
+  u64 parseNumber() {
+    return 0;
+  }
+  bool parseBool();
+  void parseNull();
+  Json *parseArray();
+  Json *parseObj();
+  
+};
+
+
+
+
 
 void parseObj(Json *obj, i8 *json_src, u64 *i, u64 json_size);
 
