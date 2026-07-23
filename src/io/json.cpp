@@ -217,6 +217,12 @@ Json *parseArray(Json *arr, i8 *json_src, u64 *i, u64 json_size) {
       Json *tmp_arr;
       tmp_arr->type = JSON_ARRAY;
       tmp_arr->root = false;
+      tmp_arr->key = nullptr;
+
+      tmp_arr->arr_len = 0;
+      tmp_arr->arr_cap = DEFAULT_OBJ_CAP;
+      tmp_arr->val.j_array = new Json *[tmp_arr->arr_cap];
+      
       parseArray(tmp_arr, json_src, i, json_size);
       arr->addArray(tmp_arr);
       if (json_src[*i] != ',') {
@@ -239,13 +245,21 @@ Json *parseArray(Json *arr, i8 *json_src, u64 *i, u64 json_size) {
       Json *tmp_obj;
       tmp_obj->type = JSON_OBJECT;
       tmp_obj->root = false;
+      tmp_obj->key = nullptr;
+
+      tmp_obj->obj_len = 0;
+      tmp_obj->obj_cap = DEFAULT_OBJ_CAP;
+      tmp_obj->val.j_obj = new Json *[tmp_obj->obj_cap];
+      
       parseObj(tmp_obj, json_src, i, json_size);
       arr->addObj(tmp_obj);
       if (json_src[*i] != ',') {
         break;
       }
     } break;
+    default: *i += 1;
     }
+    
   }
   *i += 1;
   delete cur;
@@ -354,6 +368,14 @@ void parseObj(Json *obj, i8 *json_src, u64 *i, u64 json_size) {
     case '[': {
       *i += 1;
       Json *tmp_arr = new Json{JSON_ARRAY, tmp_key->data};
+      tmp_arr->type = JSON_ARRAY;
+      tmp_arr->root = false;
+      tmp_arr->key=  nullptr;
+
+      tmp_arr->arr_len = 0;
+      tmp_arr->arr_cap = DEFAULT_ARR_CAP;
+      tmp_arr->val.j_array = new Json *[tmp_arr->arr_cap];
+
       parseArray(tmp_arr, json_src, i, json_size);
       delete tmp_key;
       obj->addArray(tmp_arr);
@@ -370,8 +392,13 @@ void parseObj(Json *obj, i8 *json_src, u64 *i, u64 json_size) {
       Json *tmp_obj;
       tmp_obj->type = JSON_OBJECT;
       tmp_obj->key = tmp_key;
-      parseObj(tmp_obj, json_src, i, json_size);
       tmp_obj->root = false;
+
+      tmp_obj->obj_len = 0;
+      tmp_obj->obj_cap = DEFAULT_OBJ_CAP;
+      tmp_obj->val.j_obj = new Json *[tmp_obj->obj_cap];
+
+      parseObj(tmp_obj, json_src, i, json_size);
       obj->addObj(tmp_obj);
       is_key = true;
       if (json_src[*i] != ',') {
@@ -526,7 +553,8 @@ Json::Json(const i8 *file_name) {
 
   close(fd);
 
-  u64 i = 1;
+  u64 *i = new u64;
+  *i = 1;
   u64 new_size = 0;
 
   i8 *prep_json_src = trimJsonSource(json_src, file_size, &new_size);
@@ -541,7 +569,7 @@ Json::Json(const i8 *file_name) {
     this->val.j_obj = new Json *[this->obj_cap];
 
 
-    parseObj(this, prep_json_src, &i, new_size);
+    parseObj(this, prep_json_src, i, new_size);
   } else if (prep_json_src[0] == '[') {
     this->type = JSON_ARRAY;
     this->root = true;
@@ -549,9 +577,9 @@ Json::Json(const i8 *file_name) {
     this->arr_len = 0;
     this->arr_cap = DEFAULT_OBJ_CAP;
     this->val.j_array = new Json *[this->arr_cap];
-    parseArray(this, prep_json_src, &i, new_size);
+    parseArray(this, prep_json_src, i, new_size);
   }
-
+  delete i;
   delete [] prep_json_src;
 
 }
@@ -782,7 +810,7 @@ void add_inner_tab(StrBuf &sb, i32 inner_tab) {
 }
 
 
-String Json::toString(i32 inner_tab = 0) {
+String Json::toString(i32 inner_tab) {
   StrBuf sb{};
 
   if (this->type == JSON_OBJECT) {
