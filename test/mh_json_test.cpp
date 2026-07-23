@@ -6,7 +6,7 @@
 TEST(json_unmarshal_test) {
   Json j{"test_json_1.json"};
   
-  printf("%s\n", j.toString().data);
+  printf("%s\n", j.toString().data); 
 }
 
 

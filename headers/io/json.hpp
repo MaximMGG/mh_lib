@@ -12,10 +12,10 @@ typedef enum {
 
 
 struct Json {
-  String key;
+  String *key = nullptr;
   
   union Val {
-    String j_string;
+    String *j_string = nullptr;
     f64 j_number;
     Json **j_array;
     Json **j_obj;
@@ -58,7 +58,7 @@ struct Json {
 
   void writeToFile(const i8* file_name);
   void print();
-  String toString();
+  String toString(i32 inner_tab = 0);
 
 private:
   void checkObjValSize();
