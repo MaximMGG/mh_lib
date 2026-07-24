@@ -27,6 +27,12 @@ public:
   }
   ~Parser();
 
+  void skipTo(i8 c) {
+    while(this->buf[this->i] != c) {
+      this->i++;
+    }
+  }
+
   i8 nextToken() {
     if (this->i == this->buf_size) {
       end_of_buf = true;
@@ -79,18 +85,180 @@ public:
     return nullptr;
   }
   
-  u64 parseNumber() {
+  f64 parseNumber() {
+    i8 buf[64] = {0};
+    u32 buf_i = 0;
+    i8 t;
+    while(!this->end_of_buf && this->valid) {
+      t = nextToken();
+      if ((t >= '0' && t <= '9') || (t == '.' && buf_i > 0) || (t == '0' && buf_i == 0)) {
+	buf[buf_i++] = t;
+      } else {
+	f64 res = atof(buf);
+	return res;
+      }
+    }
     return 0;
   }
-  bool parseBool();
-  void parseNull();
-  Json *parseArray();
-  Json *parseObj();
   
+  bool parseBool(bool cond) {
+    if (cond) {
+      if (strncmp(&this->buf[this->i], "rue", 3) == 0) {
+	this->i += 3;
+	return true;
+      } else {
+	this->valid = false;
+      }
+    } else {
+      if (strncmp(&this->buf[this->i], "alse", 4) == 0) {
+	this->i += 4;
+	return false;
+      } else {
+	this->valid = false;
+      }
+    }
+    return false;
+  }
+  
+  void parseNull() {
+    if (strncmp(&this->buf[this->i], "ull", 3) == 0) {
+      return;
+    } else {
+      this->valid = false;
+    }
+  }
+  
+  Json *parseArray() {
+    Json *arr = new Json;
+    arr->type = JSON_ARRAY;
+    arr->arr_len = 0;
+    arr->arr_cap = DEFAULT_ARR_CAP;
+    arr->val.j_array = new Json *[arr->arr_cap];
+
+    bool defind_arr_type = false;
+    i8 t;
+    while(!this->end_of_buf && this->valid) {
+      t = nextToken();
+      switch(t) {
+      case '"': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_STRING;
+	} else {
+	  if (arr->arr_type != JSON_STRING) {
+	    fprintf(stderr, "Array type is String, finc not string\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+	i8 *val = parseString();
+	arr->addString(new Json(JSON_STRING, nullptr, val));
+	delete [] val;
+      } break;
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_NUMBER;
+	} else {
+	  if (arr->arr_type != JSON_NUMBER) {
+	    fprintf(stderr, "Array type is Nmber, find not number\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+	f64 val = parseNumber();
+	arr->addNumber(new Json{JSON_NUMBER, nullptr, val});
+      } break;
+      case 't':
+      case 'f': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_BOOLEAN;
+	} else {
+	  if (arr->arr_type != JSON_BOOLEAN) {
+	    fprintf(stderr, "Array type is Boolean, find not Boolean\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+	bool val = parseBool(t == 'f' ? false : true);
+	arr->addBoolean(new Json{JSON_BOOLEAN, nullptr, val});
+      } break;
+      case 'n': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_NULL;
+	} else {
+	  if (arr->arr_type != JSON_NULL) {
+	    fprintf(stderr, "Array type is Null, find not Null\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+	parseNull();
+	arr->addNull(new Json{JSON_NULL, nullptr});
+      } break;
+      case '[': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_ARRAY;
+	} else {
+	  if (arr->arr_type != JSON_ARRAY) {
+	    fprintf(stderr, "Array type is Array, find not Array\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+	Json *val = parseArray();
+	arr->addArray(val);
+      } break;
+      case '{': {
+	if (!defind_arr_type) {
+	  arr->arr_type = JSON_OBJECT;
+	} else {
+	  if (arr->arr_type != JSON_OBJECT) {
+	    fprintf(stderr, "Array type is Object, find not Object\n");
+	    skipTo(']');
+	    nextToken();
+	    return arr;
+	  }
+	}
+
+	Json *val = parseObj();
+	arr->addObj(val);
+      } break;
+      case ']': {
+	nextToken();
+	return arr;
+      } break;
+      
+      }
+      t = nextToken();
+	if (t != ',') {
+	  if (t == ']') {
+	    nextToken();
+	    return arr;
+	  } else {
+	    this->valid = false;
+	    delete arr;
+	    return nullptr;
+	  }
+	}
+    }
+
+    return arr;
+  }
+  Json *parseObj();
 };
-
-
-
 
 
 void parseObj(Json *obj, i8 *json_src, u64 *i, u64 json_size);
