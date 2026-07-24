@@ -40,6 +40,7 @@ public:
     }
 
     while(true) {
+      this->i++;
       if (this->i == this->buf_size) {
         end_of_buf = true;
         return 0;
@@ -48,10 +49,9 @@ public:
       case '\r':
       case '\t':
       case '\n':
-      case '\a':
+      case '\a': 
       case ' ': {
         if (this->inside_string) {
-          this->i++;
           return ' ';
         } else {
           this->i++;
@@ -59,8 +59,7 @@ public:
         }
       }
       default: {
-        this->i++;
-        return this->buf[this->i - 1];
+        return this->buf[this->i];
       }
       }
     }
@@ -71,6 +70,7 @@ public:
     i8 *str = new i8 [MAX_STRING_LENGTH];
     u32 j = 0;
     ZERO(str, MAX_STRING_LENGTH);
+    if (this->buf[this->i] == '"') this->i++;
     while(!this->end_of_buf) {
       if (j == MAX_STRING_LENGTH) {
         this->valid = false;
@@ -88,30 +88,30 @@ public:
   f64 parseNumber() {
     i8 buf[64] = {0};
     u32 buf_i = 0;
-    i8 t;
+    i8 t = this->buf[this->i];
     while(!this->end_of_buf && this->valid) {
-      t = nextToken();
       if ((t >= '0' && t <= '9') || (t == '.' && buf_i > 0) || (t == '0' && buf_i == 0)) {
 	buf[buf_i++] = t;
       } else {
 	f64 res = atof(buf);
 	return res;
       }
+      t = nextToken();
     }
     return 0;
   }
   
   bool parseBool(bool cond) {
     if (cond) {
-      if (strncmp(&this->buf[this->i], "rue", 3) == 0) {
-	this->i += 3;
+      if (strncmp(&this->buf[this->i], "true", 4) == 0) {
+	this->i += 4;
 	return true;
       } else {
 	this->valid = false;
       }
     } else {
-      if (strncmp(&this->buf[this->i], "alse", 4) == 0) {
-	this->i += 4;
+      if (strncmp(&this->buf[this->i], "false", 5) == 0) {
+	this->i += 5;
 	return false;
       } else {
 	this->valid = false;
@@ -121,7 +121,8 @@ public:
   }
   
   void parseNull() {
-    if (strncmp(&this->buf[this->i], "ull", 3) == 0) {
+    if (strncmp(&this->buf[this->i], "null", 4) == 0) {
+      this->i += 4;
       return;
     } else {
       this->valid = false;
@@ -257,7 +258,68 @@ public:
 
     return arr;
   }
-  Json *parseObj();
+  Json *parseObj() {
+    Json *obj = new Json;
+    obj->type = JSON_OBJECT;
+    obj->obj_len = 0;
+    obj->obj_cap = DEFAULT_OBJ_CAP;
+    obj->val.j_obj = new Json *[obj->obj_cap];
+
+    bool find_key = false;
+    i8 *key;
+    i8 t;
+
+    while(!this->end_of_buf && this->valid) {
+      t = nextToken();
+      switch(t) {
+      case '"': {
+	if (!find_key) {
+	  key = parseString();
+	  find_key = true;
+	  t = nextToken();
+	  if (t != ':') {
+	    this->valid = false;
+	    fprintf(stderr, "Json invalid, after key \"%s\", didn't find ':'\n", key);
+	    delete [] key;
+	    delete obj;
+	    return nullptr;
+	  }
+	} else {
+	  i8 *val = parseString();
+	  obj->addString(new Json{JSON_STRING, key, val});
+	  delete [] key;
+	  delete [] val;
+	}
+      } break;
+      case '0':
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9': {
+	
+      } break;
+      }
+      t = nextToken();
+      if (t != ',') {
+	if (t == '}') {
+	  nextToken();
+	  return obj;
+	} else {
+	  delete obj;
+	  this->valid = false;
+	  return nullptr;
+	}
+      }
+    }
+
+
+    return obj;
+  }
 };
 
 
