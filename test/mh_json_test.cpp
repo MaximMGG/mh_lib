@@ -3,10 +3,16 @@
 #include <stdio.h>
 
 
-TEST(json_unmarshal_2_test) {
-  Json j{"test_json_2.json"};
+// TEST(json_unmarshal_2_test) {
+//   Json j{"test_json_2.json"};
 
-  printf("%s\n", j.toString().data);
+//   printf("%s\n", j.toString().data);
+//}
+
+TEST(json_unmarshal_3_test) {
+  Json j{"test_json_3.json"};
+  
+  printf("%s\n", j.toString().data); 
 }
 
 
@@ -17,4 +23,4 @@ TEST(json_unmarshal_test) {
 }
 
 
-TEST_LIST(json_unmarshal_test, json_unmarshal_2_test);
+TEST_LIST(json_unmarshal_test, json_unmarshal_3_test);

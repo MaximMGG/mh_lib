@@ -11,6 +11,8 @@ typedef enum {
 } JsonType;
 
 
+
+
 struct Json {
   String *key = nullptr;
   
@@ -26,8 +28,8 @@ struct Json {
   } val;  
 
   JsonType type;
-  
   JsonType arr_type;
+  bool is_float_number;
 
   u32 obj_len;
   u32 obj_cap;
@@ -44,7 +46,7 @@ struct Json {
 
   void addString(const i8 *key, const i8 *val);
   void addString(Json *j_string);
-  void addNumber(const i8 *key, f64 val);
+  void addNumber(const i8 *key, f64 val, bool is_float);
   void addNumber(Json *j_number);
   void addBoolean(const i8 *key, bool val);
   void addBoolean(Json *j_boolean);
