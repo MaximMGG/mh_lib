@@ -68,6 +68,7 @@ struct StrBuf {
   void operator<<(const i8* src);
   void operator<<(i8 c);
   void appendFmt(const i8 *fmt, ...);
+  void appendFmtLen(u32 len, const i8 *fmt, ...);
   void reverse();
   //Allocate new string, return it
   String toString();

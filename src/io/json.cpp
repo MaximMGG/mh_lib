@@ -179,10 +179,9 @@ public:
           arr->arr_type = JSON_STRING;
         } else {
           if (arr->arr_type != JSON_STRING) {
-            fprintf(stderr, "Array type is String, finc not string\n");
+            fprintf(stderr, "Array type is String, find not string\n");
             skipTo(']');
-            nextToken();
-            return arr;
+            continue;
           }
         }
         i8 *val = parseString();
@@ -212,7 +211,7 @@ public:
         }
         bool is_float;
         f64 val = parseNumber(&is_float);
-        arr->addNumber(new Json{JSON_NUMBER, nullptr, val});
+        arr->addNumber(new Json{JSON_NUMBER, nullptr, val, is_float});
       } break;
       case 't':
       case 'f': {
@@ -338,8 +337,7 @@ public:
         case '9': {
           bool is_float;
           f64 val = parseNumber(&is_float);
-          Json *new_num = new Json{JSON_NUMBER, key, val};
-          new_num->is_float_number = is_float;
+          Json *new_num = new Json{JSON_NUMBER, key, val, is_float};
           obj->addNumber(new_num);
           delete [] key;
         } break;
@@ -358,6 +356,10 @@ public:
           Json *arr = new Json{JSON_ARRAY, key};
           arr->root = false;
           parseArray(arr);
+          if (!this->valid) {
+            delete [] key;
+            return nullptr;
+          }
           obj->addArray(arr);
           delete [] key;
         } break;
@@ -365,6 +367,10 @@ public:
           Json *new_obj = new Json{JSON_OBJECT, key};
           new_obj->root = false;
           parseObj(new_obj);
+          if (!this->valid) {
+            delete [] key;
+            return nullptr;
+          }
           obj->addObj(new_obj);
           delete [] key;
         } break;
@@ -385,20 +391,15 @@ public:
             this->valid = false;
             return nullptr;
           }
-        }
+      }
     }
     return obj;
   }
 };
 
+Json::Val::Val() {}
 
-Json::Val::Val() {
-  
-}
-
-Json::Val::~Val() {
-  
-}
+Json::Val::~Val() {}
 
 Json::Json(JsonType type, const i8 *key, ...) {
   if (key != nullptr) {
@@ -408,7 +409,7 @@ Json::Json(JsonType type, const i8 *key, ...) {
     this->key = nullptr;
   }
   this->type = type;
-  switch(type) {
+  switch (type) {
   case JSON_NUMBER: {
     va_list li;
     va_start(li, key);
@@ -436,12 +437,12 @@ Json::Json(JsonType type, const i8 *key, ...) {
   case JSON_ARRAY: {
     this->arr_len = 0;
     this->arr_cap = DEFAULT_ARR_CAP;
-    this->val.j_array = new Json* [this->arr_cap];
+    this->val.j_array = new Json *[this->arr_cap];
   } break;
   case JSON_OBJECT: {
     this->obj_len = 0;
     this->obj_cap = DEFAULT_OBJ_CAP;
-    this->val.j_obj = new Json* [this->obj_cap];
+    this->val.j_obj = new Json *[this->obj_cap];
   } break;
   case JSON_NULL: {
     this->val.j_null = nullptr;
@@ -452,19 +453,20 @@ Json::Json(JsonType type, const i8 *key, ...) {
 u32 symbols_len = 6;
 i8 symbols[] = "\r\n\t\b\a ";
 
-
 bool spaceSymbol(i8 c) {
-  for(i32 i = 0; i < symbols_len; i++) {
-    if (c == symbols[i]) return true;
+  for (i32 i = 0; i < symbols_len; i++) {
+    if (c == symbols[i])
+      return true;
   }
   return false;
 }
 
 i8 *trimJsonSource(const i8 *json_src, u64 file_size, u64 *new_size) {
-  i8 *prep_source = new i8 [file_size];
+  i8 *prep_source = new i8[file_size];
   u32 i = 0;
-  for(u64 j = 0; j < file_size; j++) {
-    if (spaceSymbol(json_src[j])) continue;
+  for (u64 j = 0; j < file_size; j++) {
+    if (spaceSymbol(json_src[j]))
+      continue;
     else {
       prep_source[i++] = json_src[j];
     }
@@ -473,13 +475,12 @@ i8 *trimJsonSource(const i8 *json_src, u64 file_size, u64 *new_size) {
   return prep_source;
 }
 
-Json::Json() {
-  ZERO(this, 1); 
-}
+Json::Json() { ZERO(this, 1); }
 
 Json::~Json() {
 
-  if (this->key != nullptr) delete this->key;
+  if (this->key != nullptr)
+    delete this->key;
   if (this->type == JSON_STRING) {
     if (this->val.j_string != nullptr) {
       delete this->val.j_string;
@@ -487,16 +488,16 @@ Json::~Json() {
   }
   if (this->type == JSON_OBJECT) {
     Json **objects = this->val.j_obj;
-    for(i32 i = 0; i < this->obj_len; i++) {
+    for (i32 i = 0; i < this->obj_len; i++) {
       delete objects[i];
     }
-    delete [] objects;
+    delete[] objects;
   } else if (this->type == JSON_ARRAY) {
     Json **arr = this->val.j_array;
-    for(i32 i = 0; i < this->arr_len; i++) {
+    for (i32 i = 0; i < this->arr_len; i++) {
       delete arr[i];
     }
-    delete [] arr;
+    delete[] arr;
   }
 }
 
@@ -509,11 +510,12 @@ Json::Json(const i8 *file_name) {
 
   u64 file_size = lseek(fd, 0, SEEK_END);
   lseek(fd, 0, SEEK_SET);
-  i8 *json_src = new i8 [file_size + 1];
+  i8 *json_src = new i8[file_size + 1];
   ZERO(json_src, file_size + 1);
   u64 read_bytes = read(fd, json_src, file_size);
   if (read_bytes != file_size) {
-    fprintf(stderr, "Read bytes %ld, not eql file_size %ld\n", read_bytes, file_size);
+    fprintf(stderr, "Read bytes %ld, not eql file_size %ld\n", read_bytes,
+            file_size);
     return;
   }
 
@@ -524,7 +526,6 @@ Json::Json(const i8 *file_name) {
   u64 new_size = 0;
 
   Parser p{json_src, cast(u32, file_size)};
-
 
   if (p.currentToken() == '{') {
     this->type = JSON_OBJECT;
@@ -546,7 +547,7 @@ Json::Json(const i8 *file_name) {
     p.parseArray(this);
   }
   delete i;
-  delete [] json_src;
+  delete[] json_src;
 }
 
 Json::Json(const i8 *buf, u32 buf_len) {
@@ -560,8 +561,8 @@ Json::Json(const i8 *buf, u32 buf_len) {
     this->key = nullptr;
     this->obj_cap = DEFAULT_OBJ_CAP;
     this->obj_len = 0;
-    this->val.j_obj = new Json*[this->obj_cap];
-    p.parseObj(this);    
+    this->val.j_obj = new Json *[this->obj_cap];
+    p.parseObj(this);
   } else if (p.currentToken() == '[') {
     this->type = JSON_ARRAY;
     this->arr_cap = DEFAULT_ARR_CAP;
@@ -574,30 +575,29 @@ Json::Json(const i8 *buf, u32 buf_len) {
     fprintf(stderr, "Incorrect Json, first token is not '{' or '['\n");
     return;
   }
-
 }
 
 void Json::checkObjValSize() {
   if (this->obj_len == this->obj_cap) {
     this->obj_cap <<= 1;
-    Json **new_obj = new Json* [this->obj_cap];
-    for(i32 i = 0; i < this->obj_len; i++) {
+    Json **new_obj = new Json *[this->obj_cap];
+    for (i32 i = 0; i < this->obj_len; i++) {
       new_obj[i] = this->val.j_obj[i];
     }
-    delete [] this->val.j_obj;
+    delete[] this->val.j_obj;
     this->val.j_obj = new_obj;
   }
 }
 void Json::checkArrValSize() {
   if (this->arr_len == this->arr_cap) {
     this->arr_cap <<= 1;
-    Json **new_arr = new Json* [this->arr_cap];
-    for(i32 i = 0; i < this->arr_len; i++) {
+    Json **new_arr = new Json *[this->arr_cap];
+    for (i32 i = 0; i < this->arr_len; i++) {
       new_arr[i] = this->val.j_array[i];
     }
-    delete [] this->val.j_array;
+    delete[] this->val.j_array;
     this->val.j_array = new_arr;
-  }  
+  }
 }
 
 void Json::addString(const i8 *key, const i8 *val) {
@@ -612,10 +612,9 @@ void Json::addString(const i8 *key, const i8 *val) {
     this->val.j_array[this->arr_len++] = new Json{JSON_STRING, nullptr, val};
     checkArrValSize();
   }
-
 }
 
-void Json::addString(Json *j_string){
+void Json::addString(Json *j_string) {
   if (this->type == JSON_OBJECT) {
     this->val.j_obj[this->obj_len++] = j_string;
     checkObjValSize();
@@ -629,9 +628,10 @@ void Json::addString(Json *j_string){
   }
 }
 
-void Json::addNumber(const i8 *key, f64 val, bool is_float){
+void Json::addNumber(const i8 *key, f64 val, bool is_float) {
   if (this->type == JSON_OBJECT) {
-    this->val.j_obj[this->obj_len++] = new Json{JSON_NUMBER, key, val, is_float};
+    this->val.j_obj[this->obj_len++] =
+        new Json{JSON_NUMBER, key, val, is_float};
     checkObjValSize();
   } else {
     if (this->arr_type != JSON_NUMBER) {
@@ -643,7 +643,7 @@ void Json::addNumber(const i8 *key, f64 val, bool is_float){
   }
 }
 
-void Json::addNumber(Json *j_number){
+void Json::addNumber(Json *j_number) {
   if (this->type == JSON_OBJECT) {
     this->val.j_obj[this->obj_len++] = j_number;
     checkObjValSize();
@@ -657,8 +657,8 @@ void Json::addNumber(Json *j_number){
   }
 }
 
-void Json::addBoolean(const i8 *key, bool val){
-if (this->type == JSON_OBJECT) {
+void Json::addBoolean(const i8 *key, bool val) {
+  if (this->type == JSON_OBJECT) {
     this->val.j_obj[this->obj_len++] = new Json{JSON_BOOLEAN, key, val};
     checkObjValSize();
   } else {
@@ -668,7 +668,7 @@ if (this->type == JSON_OBJECT) {
     }
     this->val.j_array[this->arr_len++] = new Json{JSON_BOOLEAN, nullptr, val};
     checkArrValSize();
-  }  
+  }
 }
 
 void Json::addBoolean(Json *j_boolean) {
@@ -682,7 +682,7 @@ void Json::addBoolean(Json *j_boolean) {
     }
     this->val.j_array[this->arr_len++] = j_boolean;
     checkArrValSize();
-  }  
+  }
 }
 
 void Json::addArray(Json *val) {
@@ -747,16 +747,17 @@ Json *Json::getObj(const i8 *key) {
   }
 
   Json **obj_cont = this->val.j_obj;
-  for(i32 i = 0; i < this->obj_len; i++) {
+  for (i32 i = 0; i < this->obj_len; i++) {
     if (*obj_cont[i]->key == key) {
       return obj_cont[i];
     }
     if (obj_cont[i]->type == JSON_OBJECT) {
       Json *res = obj_cont[i]->getObj(key);
-      if (res != nullptr) return res;
+      if (res != nullptr)
+        return res;
     }
   }
-  
+
   return nullptr;
 }
 
@@ -772,25 +773,21 @@ void Json::writeToFile(const i8 *file_name) {
 
   u32 write_bytes = write(fd, json_content.data, json_content.len);
   if (write_bytes != json_content.len) {
-    fprintf(stderr, "write failed, write bytes %d != json_content.len %d\n", write_bytes, json_content.len);
+    fprintf(stderr, "write failed, write bytes %d != json_content.len %d\n",
+            write_bytes, json_content.len);
     close(fd);
     return;
   }
   close(fd);
 }
 
-void Json::print() {
-  
-}
-
+void Json::print() {}
 
 void add_inner_tab(StrBuf &sb, i32 inner_tab) {
   for (i32 i = 0; i < inner_tab; i++) {
     sb << "  ";
   }
-
 }
-
 
 String Json::toString(i32 inner_tab) {
   StrBuf sb{};
@@ -801,16 +798,20 @@ String Json::toString(i32 inner_tab) {
       sb << "{}";
       return sb.toString();
     }
-    
+
     sb << "{\n";
     inner_tab++;
 
     Json **obj_cont = this->val.j_obj;
-    for(i32 i = 0; i < this->obj_len; i++) {
-      switch(obj_cont[i]->type) {
+    for (i32 i = 0; i < this->obj_len; i++) {
+      switch (obj_cont[i]->type) {
       case JSON_NUMBER: {
-          add_inner_tab(sb, inner_tab);
+        add_inner_tab(sb, inner_tab);
+        if (obj_cont[i]->is_float_number) {
           sb.appendFmt("\"%s\": %lf", obj_cont[i]->key->data, obj_cont[i]->val.j_number);
+        } else {
+          sb.appendFmt("\"%s\" : %ld", obj_cont[i]->key->data, cast(u64, obj_cont[i]->val.j_number));
+        }
       } break;
       case JSON_STRING: {
         add_inner_tab(sb, inner_tab);
@@ -827,12 +828,12 @@ String Json::toString(i32 inner_tab) {
       case JSON_OBJECT: {
         String obj = obj_cont[i]->toString(inner_tab);
         add_inner_tab(sb, inner_tab);
-        sb.appendFmt("\"%s\": %s", obj_cont[i]->key->data, obj.data);
+        sb.appendFmtLen(obj.len, "\"%s\": %s", obj_cont[i]->key->data, obj.data);
       } break;
       case JSON_ARRAY: {
-        String arr = obj_cont[i]->toString(inner_tab);
+        String arr{obj_cont[i]->toString(inner_tab)};
         add_inner_tab(sb, inner_tab);
-        sb.appendFmt("\"%s\": %s", obj_cont[i]->key->data, arr.data);
+        sb.appendFmtLen(arr.len, "\"%s\": %s", obj_cont[i]->key->data, arr.data);
       } break;
       }
 
@@ -845,7 +846,7 @@ String Json::toString(i32 inner_tab) {
 
     add_inner_tab(sb, inner_tab - 1);
     sb << '}';
-    
+
   } else if (this->type == JSON_ARRAY) {
     if (this->arr_len == 0) {
       sb << "[]";
@@ -854,14 +855,19 @@ String Json::toString(i32 inner_tab) {
 
     sb << "[\n";
     inner_tab++;
-    
 
     Json **arr_cont = this->val.j_array;
-    for(i32 i = 0; i < this->arr_len; i++) {
-      switch(this->arr_type) {
+    for (i32 i = 0; i < this->arr_len; i++) {
+      switch (this->arr_type) {
       case JSON_NUMBER: {
-        add_inner_tab(sb, inner_tab);
-        sb.appendFmt("%lf", arr_cont[i]->val.j_number);
+        if (arr_cont[i]->is_float_number) {
+          add_inner_tab(sb, inner_tab);
+          sb.appendFmt("%lf", arr_cont[i]->val.j_number);
+        } else {
+          add_inner_tab(sb, inner_tab);
+          sb.appendFmt("%ld", cast(u64, arr_cont[i]->val.j_number));
+        }
+
       } break;
       case JSON_STRING: {
         add_inner_tab(sb, inner_tab);
@@ -878,26 +884,25 @@ String Json::toString(i32 inner_tab) {
       case JSON_OBJECT: {
         String obj = arr_cont[i]->toString(inner_tab);
         add_inner_tab(sb, inner_tab);
-        sb.appendFmt("%s", obj.data);
+        sb.appendFmtLen(obj.len, "%s", obj.data);
       } break;
       case JSON_ARRAY: {
-        String arr = arr_cont[i]->toString();
+        String arr = arr_cont[i]->toString(inner_tab);
         add_inner_tab(sb, inner_tab);
-        sb.appendFmt("%s", arr.data);
+        sb.appendFmtLen(arr.len, "%s", arr.data);
       } break;
       }
 
-      if (i != this->obj_len - 1) {
+      if (i != this->arr_len - 1) {
         sb << ",\n";
       } else {
         sb << '\n';
       }
-
     }
-    
-    add_inner_tab(sb, inner_tab - 1);      
+
+    add_inner_tab(sb, inner_tab - 1);
     sb << ']';
-    }
+  }
 
-    return sb.toString();
+  return sb.toString();
 }

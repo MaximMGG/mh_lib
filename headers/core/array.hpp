@@ -15,11 +15,11 @@ struct DArr {
   u32 len = 0;
   u32 cap = DEFAULT_DARR_CAP;
 
-  DArr() {
+  DArr<T>() {
     this->data = new T [this->cap];
     ZERO(this->data, this->cap);
   }
-  DArr(T *t, u32 len) {
+  DArr<T>(T *t, u32 len) {
     while(len > this->cap) {
       this->cap <<= 1;
     }
@@ -29,7 +29,7 @@ struct DArr {
     this->len = len;
   }
   
-  DArr(u32 len) {
+  DArr<T>(u32 len) {
     while(len > this->cap) {
       this->cap <<= 1;
     }
@@ -37,7 +37,7 @@ struct DArr {
     ZERO(this->data, this->cap);
   }
   
-  DArr(DArr& other) {
+  DArr<T>(DArr& other) {
     this->cap = other.cap;
     this->data = new T [this->cap];
     ZERO(this->data, this->cap);
@@ -45,7 +45,7 @@ struct DArr {
     this->len = other.len;
   }
 
-  DArr(DArr *other) {
+  DArr<T>(DArr *other) {
     this->cap = other->cap;
     this->data = new T [this->cap];
     ZERO(this->data, this->cap);

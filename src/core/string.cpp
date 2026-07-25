@@ -389,6 +389,7 @@ void checkCap(StrBuf& sb, u32 len) {
 
 
 void StrBuf::append(const i8* src) {
+  
   u32 src_len = strlen(src);
   checkCap(*this, src_len);
   memcpy(&this->data[this->len], src, src_len);
@@ -425,6 +426,16 @@ void StrBuf::appendFmt(const i8 *fmt, ...) {
   va_start(li, fmt);
   i8 buf[4096]{0};
   vsnprintf(buf, 4096, fmt, li);
+  va_end(li);
+  append(buf);
+}
+
+void StrBuf::appendFmtLen(u32 len, const i8 *fmt, ...) {
+  va_list li;
+  va_start(li, fmt);
+  i8 *buf = new i8[len + 4096];
+  ZERO(buf, len + 4096);
+  vsnprintf(buf, len + 4096, fmt, li);
   va_end(li);
   append(buf);
 }
