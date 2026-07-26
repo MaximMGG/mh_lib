@@ -5,57 +5,85 @@
 #include <dirent.h>
 #include <string.h>
 
-struct TestFile {
-  String name;
+struct TestCase {
   String test_dir;
   String compiler;
-  String compile_string;
+  String generic_compile_string;
   DArr<String> test_cases;
 };
 
 
+const i8 *default_test_json = "{\n"
+"\"test_directory\": \"./test\",\n"
+"\"compiler\": \"g++\",\n"
+"\"save_exe\": false,\n"
+"\"log_file_name\": \"\",\n"
+"\"test_cases\": []\n"
+"}\n";
+
+void printHelp() {
+  printf("-c -> Just compile, without running tests\n");
+  printf("-g -> Comile with debug symbols\n");
+  printf("-create_default -> Create default test.json with default content\n");
+  printf("-show_default_json -> Print default content of test.json\n");
+  printf("-v -> Run tests with 'valgrind'\n");
+  printf("-save_exe -> Will not delete executable after test run. \n\t\t"
+         "If you want this behaviour be default, specify in test.json (\"save_exe\": true)\n");
+}
+
+void printDefaultJson() {
+  printf("%s\n", default_test_json);
+}
+
+void createDefaultTestJson() {
+  i32 fd = open("test.json", O_CREAT | O_TRUNC | O_RDWR, 777);
+  if (fd <= 0) {
+    fprintf(stderr, "Can't create test.json file\n");
+    return;
+  }
+
+  i64 write_bytes = write(fd, default_test_json, strlen(default_test_json));
+  if (write_bytes < 0) {
+    fprintf(stderr, "Failed to write default json content to test.json\n");
+    close(fd);
+    return;
+  }
+  
+  close(fd);
+}
+
+bool checkTestFileExists() {
+  if (access("test.json", F_OK) != 0) {
+    return false;
+  } return true;
+}
+
 
 void doTesting(const i8 *name, i32 argc, i8 **argv) {
-  i32 fd = open(name, O_RDONLY);
-  if (fd <= 0) {
-    fprintf(stderr, "Can't open file %s\n", name);
-    return;
-  }
-  u64 file_size = lseek(fd, 0, SEEK_END);
-  lseek(fd, 0, SEEK_SET);
-  i8 *test_buf = new i8 [file_size + 1];
-  ZERO(test_buf, file_size + 1);
-  u64 read_bytes = read(fd, test_buf, file_size);
-  String content{test_buf};
-  delete [] test_buf;
-  if (read_bytes != file_size) {
-    fprintf(stderr, "read syscall error, try to read %s file\n", name);
-    return;
-  }
+
 }
-
-
 
 i32 main(i32 argc, i8 **argv) {
-  DIR *d = opendir(".");
-  if (d == nullptr) {
-    fprintf(stderr, "Can't open current dir\n");
+  if (!checkTestFileExists()) {
+    fprintf(stderr, "Can't find test.json file, if you want to create default enter [cpptest -create_default]\n");
     return 1;
   }
-  bool find_test_file = false;
 
-  struct dirent *dt;
-
-  while((dt = readdir(d)) != nullptr) {
-    i8 *dot_test = strstr(dt->d_name, ".test");
-    if (dot_test != nullptr) {
-      find_test_file = true;
-      doTesting(dt->d_name, argc, argv);
+  for(i32 i = 0; i < argc; i++) {
+    if (strcmp(argv[i], "-create_default") == 0) {
+      createDefaultTestJson();
+      return 0;
     }
-  }
-  closedir(d);
-  if (!find_test_file) {
-    fprintf(stderr, "Do not found *.test file!\nIf you what to create default one, type: cpptest -create-default\n");
-    return 1;
+    if ((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
+      printHelp();
+      return 0;
+    }
+    if (strcmp(argv[i], "-show_default_json") == 0) {
+      printDefaultJson();
+      return 0;
+    }
+    
   }
 }
+
+
