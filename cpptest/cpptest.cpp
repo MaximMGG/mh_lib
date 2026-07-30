@@ -1,4 +1,5 @@
 #include <mh/core.hpp>
+#include <mh/io/json.hpp>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -12,6 +13,12 @@ struct TestCase {
   DArr<String> test_cases;
 };
 
+TestCase main_test;
+
+bool valgrind = false;
+bool delete_exe = true;
+bool run = true;
+bool debug = false;
 
 const i8 *default_test_json = "{\n"
 "\"test_directory\": \"./test\",\n"
@@ -59,7 +66,16 @@ bool checkTestFileExists() {
 }
 
 
-void doTesting(const i8 *name, i32 argc, i8 **argv) {
+void doTesting() {
+  Json test_case{"./test.json"};
+
+  Json *test_dir = test_case.getObj("test_directory");
+  if (test_dir == nullptr) {
+    fprintf(stderr, "Incorrect default test.json\n");
+    return;
+  }
+  main_test.test_dir = test_dir->val.j_string;
+
 
 }
 
@@ -82,7 +98,19 @@ i32 main(i32 argc, i8 **argv) {
       printDefaultJson();
       return 0;
     }
-    
+
+    if (strcmp(argv[i], "-v") == 0) {
+      valgrind = true;
+    }
+    if (strcmp(argv[i], "-c") == 0) {
+      run = true;
+    }
+    if (strcmp(argv[i], "-save_exe") == 0) {
+      delete_exe = true;
+    }
+    if (strcmp(argv[i], "-g") == 0) {
+      debug = true;
+    }
   }
 }
 
