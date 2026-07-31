@@ -10,6 +10,7 @@ struct TestCase {
   String test_dir;
   String compiler;
   String generic_compile_string;
+  String log_file_path;
   DArr<String> test_cases;
 };
 
@@ -19,6 +20,7 @@ bool valgrind = false;
 bool delete_exe = true;
 bool run = true;
 bool debug = false;
+bool log_in_file = false;
 
 const i8 *default_test_json = "{\n"
 "\"test_directory\": \"./test\",\n"
@@ -74,8 +76,41 @@ void doTesting() {
     fprintf(stderr, "Incorrect default test.json\n");
     return;
   }
-  main_test.test_dir = test_dir->val.j_string;
+  main_test.test_dir = *test_dir->val.j_string;
+  Json *compiler = test_case.getObj("compiler");
+  if (compiler == nullptr) {
+    fprintf(stderr, "Incorrect default test.json\n");
+    return;
+  }
+  if (compiler->val.j_string->len == 0) {
+    main_test.compiler = "g++";
+  } else {
+    main_test.compiler = *compiler->val.j_string;
+  }
 
+  Json *log_file_name = test_case.getObj("log_file_name");
+  if (log_file_name == nullptr) {
+    fprintf(stderr, "Incorrect default test.json\n");
+    return;
+  }
+  String log_in_file = *log_file_name->val.j_string;
+  if (log_in_file.len != 0) {
+    main_test.log_file_path = log_in_file;
+  }
+  Json *tests = test_case.getObj("test_cases");
+  if (tests == nullptr) {
+    fprintf(stderr, "No tests to run!");
+    return;
+  }
+
+  for(i32 i = 0; i < tests->arr_len; i++) {
+    String test{};
+    Json *current_test = tests->val.j_array[i];
+    for(i32 j = 0; j < current_test->arr_len; j++) {
+      test.concat(*current_test->val.j_array[j]->val.j_string);
+    }
+
+  }
 
 }
 
