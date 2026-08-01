@@ -1,3 +1,7 @@
+#ifndef MH_JSON_HPP
+#define MH_JSON_HPP
+
+
 #include "../core.hpp"
 
 
@@ -66,3 +70,5 @@ private:
   void checkObjValSize();
   void checkArrValSize();
 };
+
+#endif //MH_JSON_HPP
