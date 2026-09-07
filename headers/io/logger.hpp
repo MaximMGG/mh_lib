@@ -5,7 +5,7 @@
 
 
 enum Logger_Type {
-  CONSOLE, FILE, SOCKET
+  LOGGER_CONSOLE, LOGGER_FILE, LOGGER_SOCKET, LOGGER_FD
 };
 
 struct Logger_Opt {
@@ -15,33 +15,27 @@ struct Logger_Opt {
   bool time;
 };
 
-class Logger {
-public:
-  Logger();
-  Logger(const char *file_name);
-  Logger(i32 fd);
-  ~Logger();
-  void setOpt();
-  void TRACE_log(const char *fmt, ...);
-  void INFO_log(const char *fmt, ...);
-  void DEBUG_log(const char *fmt, ...);
-  void ERROR_log(const char *fmt, ...);
-  void FATAL_log(const char *fmt, ...);
-private:
-  Logger_Opt opt = (Logger_Opt){.line = true, .file = true, .func = true, .time = true};
+
+typedef struct {
+  Logger_Opt opt;
   Logger_Type type;
   i32 fd;
-};
+} InerLogger;
 
-extern Logger __logger;
+void loggerInit(Logger_Type type = LOGGER_CONSOLE, 
+    Logger_Opt opt = (Logger_Opt){.line = true, .file = true, .func = true, .time = true}, const i8 *f_name = "", i32 fd = -1);
+void loggerCleanup();
+void __inerLog(InerLogger *log, const i8 *level, const i8 *file, const i8 *func, i32 line, const char *fmt, ...);
 
-#define TRACE 
-#define INFO 
-#define DEBUG 
-#define ERROR 
-#define FATAL 
+extern InerLogger *__logger;
 
-#define LOG(level, fmt, ...) level ## _log(fmt, __VA_ARGS__)
+#define TRACE "TRACE" 
+#define INFO  "INFO"
+#define DEBUG "DEBUG"
+#define ERROR "ERROR"
+#define FATAL "FATAL"
+
+#define LOG(level, fmt, ...) __inerLog(__logger, level, __FILE__, __FUNCTION__, __LINE__, fmt, ##__VA_ARGS__)
 
 
 #endif //MH_LOGGER_HPP
