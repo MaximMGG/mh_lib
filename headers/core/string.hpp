@@ -14,7 +14,7 @@ struct String {
   String(String& s);
   String(const String& s);
   String(i8 *str, u32 len);
-  String(const i8 *fmt, ...);
+  //String(const i8 *fmt, ...);
 
   void concat(String &s);
   void concat(const i8 *str);
