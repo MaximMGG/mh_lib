@@ -91,6 +91,7 @@ String::String(const String& s) {
 String::String(i8 *str, u32 len) {
   this->len = len;
   this->data = new i8 [len + 1];
+  memset(this->data, 0, len + 1);
   __strcpy(this->data, str, len);
 }
 
