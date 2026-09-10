@@ -36,5 +36,36 @@ void ZERO(T *t, u32 size) {
   memset(t, 0, sizeof(T) * size);
 }
 
+template <typename T>
+class Optional {
+public:
+  bool ok;
+  Optional(T *element) {
+    this->ok = true;
+    this->element = element;
+  }
+  Optional() : ok(false){
+    this->element = NULL;
+  }
+
+  Optional(Optional<T> &o) {
+    this->element = o.element;
+    this->ok = o.ok;
+  }
+
+  T& operator&() {
+    return *this->element;
+  }
+
+  void operator=(Optional<T> other) {
+    this->element = other.element;
+    this->ok = other.ok;
+  }
+
+private:
+  T *element;
+};
+
+
 
 #endif //MH_TYPES_HPP
