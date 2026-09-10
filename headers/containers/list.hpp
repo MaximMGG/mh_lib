@@ -28,9 +28,25 @@ public:
     delete [] this->data;
   }
 
+#define LIST_EXPEREMENT
   void append(T element) {
+#ifdef LIST_EXPEREMENT
+    this->data[this->len] = element;
+    this->len++;
+    if (this->len == this->cap) {
+      this->cap <<= 1;
+      T *new_data = new T [this->cap];
+      for(i32 i = 0; i < this->len; i++) {
+        new_data[i] = this->data[i];
+      }
+      delete [] this->data;
+      this->data = new_data;
+    }
+#else
     this->data[this->len] = element;
     incLen();
+#endif
+
   }
 
   void append(T *elements, u32 size) {
@@ -41,6 +57,7 @@ public:
 
   //0, 1, 2, 3, 4, 5, 6, 7, 8, 9
   void insert(T element, u32 pos) {
+
     T *tmp_data = new T [this->len - pos];
     memcpy(tmp_data, &this->data[pos], sizeof(T) * (this->len - pos));
     this->data[pos] = element;
@@ -48,6 +65,7 @@ public:
     incLen();
     delete [] tmp_data;
   }
+
 
   void insert(T *elements, u32 size, u32 pos) {
     grow(size);
@@ -102,7 +120,7 @@ public:
   }
 
 private:
-  void incLen() {
+  void inline incLen() {
     this->len++;
     if (this->cap == this->len) {
       T *new_data = new T [this->cap << 1];
