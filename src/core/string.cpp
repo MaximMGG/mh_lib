@@ -239,7 +239,23 @@ bool String::eql(const i8 *s) {
 }
 
 DArr<String> String::split(const i8 *pattern) {
-  return DArr<String>{};
+  u32 p_len = strlen(pattern);
+  DArr<String> res;
+  i8 *buf = new i8 [this->len];
+  u32 buf_i = 0;
+  u32 i = 0;
+  u32 last_index = 0;
+  while(i != this->len) {
+    if (strncmp(&this->data[i], pattern, p_len) == 0) {
+      res.append(String(&this->data[last_index], i - last_index));
+      last_index = i + p_len;
+      i += p_len;
+      continue;
+    }
+    i++;
+  }
+  res.append(String(&this->data[last_index], this->len - last_index));
+  return res;
 }
   
 String::~String() {
@@ -354,6 +370,16 @@ void String::replace(const i8 *pattern, const i8 *s) {
   this->len = acum.len;
 }
 
+void String::fmt(const i8 *fmt, ...) {
+  va_list li;
+  va_start(li, fmt);
+  i8 buf[4096]{0};
+  u32 buf_len = vsprintf(buf, fmt, li);
+  this->data = new i8 [buf_len + 1];
+  memcpy(this->data, buf, buf_len + 1);
+  this->len = buf_len;
+  va_end(li);
+}
 
 //STRING BUFFER BEGIN
 
